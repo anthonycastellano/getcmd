@@ -1,5 +1,5 @@
 use std::env;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 use directories::ProjectDirs;
 
@@ -15,11 +15,11 @@ fn main() {
     }
 
     // check config for api key
-    let config_dir: String = match ProjectDirs::from("com","tony", "getcmd") {
-        Some(proj_dirs) => proj_dirs.config_dir().to_str().unwrap().to_string(),
-        None => String::new()
+    let config_dir: PathBuf = match ProjectDirs::from("com","tony", "getcmd") {
+        Some(proj_dirs) => proj_dirs.config_dir().to_path_buf(),
+        None => Path::new("").to_path_buf(),
     };
-    if config_dir.is_empty() {
+    if config_dir.to_str().unwrap() == "" {
         println!("Error: Unable to get config dir");
         exit(1);
     }
