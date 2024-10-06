@@ -1,10 +1,11 @@
 use std::env;
 use std::fs;
-use std::io;
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use directories::ProjectDirs;
 use serde_json;
+use rpassword::read_password;
 
 const QUALIFIER: &str = "com";
 const ORGANIZATION: &str = "tony";
@@ -53,12 +54,11 @@ fn main() {
             Err(_) => serde_json::from_str("{}").unwrap(),
         };
     }
-    println!("{:?}", config_json);
 
-    // read config
-    // let mut input_buf = String::new();
-    // io::stdin().read_line(&mut input_buf)?;
-    // println!("OpenAI API key not configured. Please paste your key below:")
+    // recreate config 
+    println!("OpenAI API key not configured. Please paste your key below:");
+    io::stdout().flush().unwrap();
+    let api_key = read_password().expect("read input");
 
     // combine non-flag args into string
     let prompt: String = args[1..].join(" ").to_string();
