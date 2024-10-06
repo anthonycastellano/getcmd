@@ -11,6 +11,7 @@ const QUALIFIER: &str = "com";
 const ORGANIZATION: &str = "tony";
 const APPLICATION: &str = "getcmd";
 const CONFIG_FILENAME: &str = "conf.json";
+const API_KEY_KEY: &str = "api_key";
 
 fn main() {
     // grab args
@@ -48,7 +49,7 @@ fn main() {
     config_dir.push(CONFIG_FILENAME);
     let mut config_json: serde_json::Value = serde_json::from_str("{}").unwrap();
     if config_dir.exists() {
-        let config_file = fs::File::open(config_dir).expect("config file");
+        let config_file = fs::File::open(&config_dir).expect("config file");
         config_json = match serde_json::from_reader(config_file) {
             Ok(conf) => conf,
             Err(_) => serde_json::from_str("{}").unwrap(),
@@ -59,6 +60,11 @@ fn main() {
     println!("OpenAI API key not configured. Please paste your key below:");
     io::stdout().flush().unwrap();
     let api_key = read_password().expect("read input");
+    
+    if let Some(obj) = config_json.as_object_mut() {
+        obj.insert(API_KEY_KEY.to_string(), serde_json::Value::String(api_key));
+    }
+    fs::write(&config_dir, config_json.to_string()).expect("write JSON config");
 
     // combine non-flag args into string
     let prompt: String = args[1..].join(" ").to_string();
