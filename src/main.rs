@@ -1,12 +1,26 @@
 use std::env;
+use std::path::Path;
 use std::process::exit;
+use directories::ProjectDirs;
+
 
 fn main() {
     // grab args
     let args: Vec<String> = env::args().collect();
 
+    // validate input
     if args.len() <= 1 {
         println!("Error: An instruction must be provided");
+        exit(1);
+    }
+
+    // check config for api key
+    let config_dir: String = match ProjectDirs::from("com","tony", "getcmd") {
+        Some(proj_dirs) => proj_dirs.config_dir().to_str().unwrap().to_string(),
+        None => String::new()
+    };
+    if config_dir.is_empty() {
+        println!("Error: Unable to get config dir");
         exit(1);
     }
 
