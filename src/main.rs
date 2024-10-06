@@ -56,14 +56,15 @@ fn main() {
         };
     }
 
-    // recreate config 
+    // create config 
     println!("OpenAI API key not configured. Please paste your key below:");
     io::stdout().flush().unwrap();
     let api_key = read_password().expect("read input");
-    
     if let Some(obj) = config_json.as_object_mut() {
         obj.insert(API_KEY_KEY.to_string(), serde_json::Value::String(api_key));
     }
+
+    // write config file
     fs::write(&config_dir, config_json.to_string()).expect("write JSON config");
 
     // combine non-flag args into string
