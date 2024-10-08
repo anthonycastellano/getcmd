@@ -15,6 +15,7 @@ const ORGANIZATION: &str = "tony";
 const APPLICATION: &str = "getcmd";
 const CONFIG_FILENAME: &str = "conf.json";
 const API_KEY_KEY: &str = "api_key";
+const PROMPT_PREFIX: &str = "Respond with ONLY the command to run to perform the following task on Ubuntu Linux, and nothing else: ";
 const OPENAI_URL: &str = "https://api.openai.com";
 const OPENAI_CHAT_PATH: &str = "/v1/chat/completions";
 const OPENAI_CHAT_MODEL: &str = "gpt-4o-mini";
@@ -76,7 +77,7 @@ fn main() {
     }
 
     // combine non-flag args into string
-    let prompt: String = args[1..].join(" ").to_string();
+    let prompt: String = format!("{}{}", PROMPT_PREFIX, args[1..].join(" ").to_string());
 
     // set up request
     let url: String = format!("{}{}", OPENAI_URL, OPENAI_CHAT_PATH);
