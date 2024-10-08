@@ -3,16 +3,24 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
+use std::error::Error;
 use http::{Request, Response};
 use directories::ProjectDirs;
+use serde::Serialize;
 use serde_json;
+use serde_json::{Value, json};
 use rpassword::read_password;
+use reqwest::blocking::Client;
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 
 const QUALIFIER: &str = "com";
 const ORGANIZATION: &str = "tony";
 const APPLICATION: &str = "getcmd";
 const CONFIG_FILENAME: &str = "conf.json";
 const API_KEY_KEY: &str = "api_key";
+const OPENAI_URL: &str = "https://api.openai.com";
+const OPENAI_CHAT_PATH: &str = "/v1/chat/completions";
+const OPENAI_CHAT_MODEL: &str = "gpt-4o-mini";
 
 fn main() {
     // grab args
@@ -73,5 +81,27 @@ fn main() {
     // combine non-flag args into string
     let prompt: String = args[1..].join(" ").to_string();
 
-    println!("{:?}", prompt)
+    // set up request
+    let url: String = format!("{}{}", OPENAI_URL, OPENAI_CHAT_PATH);
+    let mut headers = HeaderMap::new();
+    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", config_json.get(API_KEY_KEY).unwrap().to_string())).unwrap());
+    let body = json!({
+        "model": OPENAI_CHAT_MODEL,
+        "messages": [{
+            "role": "user",
+            "content": "Say this is a test"
+        }]
+    });
+    
+    // make request
+    let client = Client::new();
+    let response = match client.post(url).headers(headers).json(&body).send() {
+        Ok(res) => {
+            println!("{:?}", res.text().unwrap());
+        },
+        Err(e) => {
+            println!("Error while making request: {}", e);
+        },
+    };
+
 }
