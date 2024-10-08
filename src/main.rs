@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::exit;
 use directories::ProjectDirs;
 use serde_json;
-use serde_json::{json};
+use serde_json::{Value, json};
 use rpassword::read_password;
 use reqwest::blocking::Client;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
@@ -94,12 +94,14 @@ fn main() {
     // make request
     let client = Client::new();
     let response = match client.post(url).headers(headers).json(&body).send() {
-        Ok(res) => {
-            println!("{:?}", res.text().unwrap());
-        },
+        Ok(res) => res.text().unwrap(),
         Err(e) => {
             println!("Error while making request: {}", e);
+            String::from("{}")
         },
     };
+
+    let response_json: Value = serde_json::from_str(&response).unwrap();
+    println!("{}", response_json);
 
 }
