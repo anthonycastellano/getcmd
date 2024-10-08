@@ -3,15 +3,12 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
-use std::error::Error;
-use http::{Request, Response};
 use directories::ProjectDirs;
-use serde::Serialize;
 use serde_json;
-use serde_json::{Value, json};
+use serde_json::{json};
 use rpassword::read_password;
 use reqwest::blocking::Client;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 
 const QUALIFIER: &str = "com";
 const ORGANIZATION: &str = "tony";
@@ -84,12 +81,13 @@ fn main() {
     // set up request
     let url: String = format!("{}{}", OPENAI_URL, OPENAI_CHAT_PATH);
     let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", config_json.get(API_KEY_KEY).unwrap().to_string())).unwrap());
+    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", config_json.get(API_KEY_KEY).unwrap().as_str().unwrap())).unwrap());
+    headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
     let body = json!({
         "model": OPENAI_CHAT_MODEL,
         "messages": [{
             "role": "user",
-            "content": "Say this is a test"
+            "content": &prompt
         }]
     });
     
