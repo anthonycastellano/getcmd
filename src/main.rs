@@ -30,7 +30,42 @@ fn main() {
         exit(1);
     }
 
-    // get config
+    // set up api key
+    let config_json: serde_json::Value = get_config(); 
+
+    // combine non-flag args into string
+    let prompt: String = format!("{}{}", PROMPT_PREFIX, args[1..].join(" ").to_string());
+
+    // set up request
+    let url: String = format!("{}{}", OPENAI_URL, OPENAI_CHAT_PATH);
+    let mut headers = HeaderMap::new();
+    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", config_json.get(API_KEY_KEY).unwrap().as_str().unwrap())).unwrap());
+    headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
+    let body = json!({
+        "model": OPENAI_CHAT_MODEL,
+        "messages": [{
+            "role": "user",
+            "content": &prompt
+        }]
+    });
+    
+    // make request
+    let client = Client::new();
+    let response = match client.post(url).headers(headers).json(&body).send() {
+        Ok(res) => res.text().unwrap(),
+        Err(e) => {
+            println!("Error while making request: {}", e);
+            String::from("{}")
+        },
+    };
+
+    let response_json: Value = serde_json::from_str(&response).unwrap();
+    println!("{}", response_json);
+
+}
+
+fn get_config() -> serde_json::Value {
+    // get config dir
     let mut config_dir: PathBuf = match ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION) {
         Some(proj_dirs) => proj_dirs.config_dir().to_path_buf(),
         None => Path::new("").to_path_buf(),
@@ -76,33 +111,5 @@ fn main() {
         fs::write(&config_dir, config_json.to_string()).expect("write JSON config");
     }
 
-    // combine non-flag args into string
-    let prompt: String = format!("{}{}", PROMPT_PREFIX, args[1..].join(" ").to_string());
-
-    // set up request
-    let url: String = format!("{}{}", OPENAI_URL, OPENAI_CHAT_PATH);
-    let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", config_json.get(API_KEY_KEY).unwrap().as_str().unwrap())).unwrap());
-    headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
-    let body = json!({
-        "model": OPENAI_CHAT_MODEL,
-        "messages": [{
-            "role": "user",
-            "content": &prompt
-        }]
-    });
-    
-    // make request
-    let client = Client::new();
-    let response = match client.post(url).headers(headers).json(&body).send() {
-        Ok(res) => res.text().unwrap(),
-        Err(e) => {
-            println!("Error while making request: {}", e);
-            String::from("{}")
-        },
-    };
-
-    let response_json: Value = serde_json::from_str(&response).unwrap();
-    println!("{}", response_json);
-
+    config_json
 }
