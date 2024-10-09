@@ -1,6 +1,6 @@
 use std::env;
 use std::fs;
-use std::io::{self, Write};
+use std::io::{self, Write, stdin};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use directories::ProjectDirs;
@@ -61,9 +61,19 @@ fn main() {
         },
     };
 
+    // extract response
     let response_json: Value = from_str(&response).unwrap();
     let response_command: String = extract_command_from_response(&response_json);
-    println!("{}", response_command);
+
+    // ask for confirmation
+    println!("getcmd returned the following command:\n\n{}\n\nrun it? (y/n)", response_command);
+    io::stdout().flush().unwrap(); // flush output
+    let mut continue_response = String::new();
+    stdin().read_line(&mut continue_response).expect("did not enter a correct string");
+    if continue_response != "y" { // exit if user does not want to run command
+        println!("exiting...");
+        exit(0);
+    }
 
 }
 
@@ -104,7 +114,7 @@ fn get_config() -> Value {
     if config_json.to_string() == "{}" {
         // create config 
         println!("OpenAI API key not configured. Please paste your key below:");
-        io::stdout().flush().unwrap();
+        io::stdout().flush().unwrap(); // flush output
         let api_key = read_password().expect("read input");
         if let Some(obj) = config_json.as_object_mut() {
             obj.insert(API_KEY_KEY.to_string(), Value::String(api_key));
