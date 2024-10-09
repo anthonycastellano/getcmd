@@ -2,7 +2,7 @@ use std::env;
 use std::fs;
 use std::io::{self, Write, stdin};
 use std::path::{Path, PathBuf};
-use std::process::exit;
+use std::process::{exit, Command};
 use directories::ProjectDirs;
 use serde_json::{Value, json, from_str, from_reader};
 use rpassword::read_password;
@@ -70,11 +70,20 @@ fn main() {
     io::stdout().flush().unwrap(); // flush output
     let mut continue_response = String::new();
     stdin().read_line(&mut continue_response).expect("did not enter a correct string");
-    if continue_response != "y" { // exit if user does not want to run command
+    if continue_response.trim() != "y" { // exit if user does not want to run command
         println!("exiting...");
         exit(0);
     }
-
+    
+    // execute command and print output
+    let output = Command::new(response_command).output().expect("failed to execute command");
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        println!("{}", stdout);
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        println!("command failed with error: {}", stderr);
+    }
 }
 
 fn get_config() -> Value {
@@ -133,5 +142,5 @@ fn extract_command_from_response (response: &Value) -> String {
     let message: &Value = choice.get("message").expect("OpenAI response choice message");
     let content: String = message.get("content").expect("OpenAI response message content").to_string();
 
-    content.replace("`", "")
+    content.replace(CMD_STR, "")
 }
