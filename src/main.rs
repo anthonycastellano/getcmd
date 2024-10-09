@@ -4,8 +4,7 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use directories::ProjectDirs;
-use serde_json;
-use serde_json::{Value, json};
+use serde_json::{Value, json, from_str, from_reader};
 use rpassword::read_password;
 use reqwest::blocking::Client;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
@@ -13,9 +12,12 @@ use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 const QUALIFIER: &str = "com";
 const ORGANIZATION: &str = "tony";
 const APPLICATION: &str = "getcmd";
+
 const CONFIG_FILENAME: &str = "conf.json";
 const API_KEY_KEY: &str = "api_key";
-const PROMPT_PREFIX: &str = "Respond with ONLY the command to run to perform the following task on Ubuntu Linux, and nothing else: ";
+
+const CMD_STR: &str = "`";
+const PROMPT_PREFIX: &str = "Respond ONLY with the command to run to perform the following objective on Ubuntu Linux, surrounded by the '`' character:";
 const OPENAI_URL: &str = "https://api.openai.com";
 const OPENAI_CHAT_PATH: &str = "/v1/chat/completions";
 const OPENAI_CHAT_MODEL: &str = "gpt-4o-mini";
@@ -31,7 +33,7 @@ fn main() {
     }
 
     // set up api key
-    let config_json: serde_json::Value = get_config(); 
+    let config_json: Value = get_config(); 
 
     // combine non-flag args into string
     let prompt: String = format!("{}{}", PROMPT_PREFIX, args[1..].join(" ").to_string());
@@ -59,12 +61,13 @@ fn main() {
         },
     };
 
-    let response_json: Value = serde_json::from_str(&response).unwrap();
-    println!("{}", response_json);
+    let response_json: Value = from_str(&response).unwrap();
+    let response_command: String = extract_command_from_response(&response_json);
+    println!("{}", response_command);
 
 }
 
-fn get_config() -> serde_json::Value {
+fn get_config() -> Value {
     // get config dir
     let mut config_dir: PathBuf = match ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION) {
         Some(proj_dirs) => proj_dirs.config_dir().to_path_buf(),
@@ -89,12 +92,12 @@ fn get_config() -> serde_json::Value {
 
     // read config file if it exists, create empty JSON object if it does not yet exist
     config_dir.push(CONFIG_FILENAME);
-    let mut config_json: serde_json::Value = serde_json::from_str("{}").unwrap();
+    let mut config_json: Value = from_str("{}").unwrap();
     if config_dir.exists() {
         let config_file = fs::File::open(&config_dir).expect("config file");
-        config_json = match serde_json::from_reader(config_file) {
+        config_json = match from_reader(config_file) {
             Ok(conf) => conf,
-            Err(_) => serde_json::from_str("{}").unwrap(),
+            Err(_) => from_str("{}").unwrap(),
         };
     }
 
@@ -104,7 +107,7 @@ fn get_config() -> serde_json::Value {
         io::stdout().flush().unwrap();
         let api_key = read_password().expect("read input");
         if let Some(obj) = config_json.as_object_mut() {
-            obj.insert(API_KEY_KEY.to_string(), serde_json::Value::String(api_key));
+            obj.insert(API_KEY_KEY.to_string(), Value::String(api_key));
         }
 
         // write config file
@@ -112,4 +115,13 @@ fn get_config() -> serde_json::Value {
     }
 
     config_json
+}
+
+fn extract_command_from_response (response: &Value) -> String {
+    let choices: &Value = response.get("choices").expect("OpenAI API response choices array");
+    let choice: &Value = choices.get(0).expect("OpenAI response choice object");
+    let message: &Value = choice.get("message").expect("OpenAI response choice message");
+    let content: String = message.get("content").expect("OpenAI response message content").to_string();
+
+    content.replace("`", "")
 }
