@@ -2,7 +2,7 @@ use std::env;
 use std::fs;
 use std::io::{self, Write, stdin};
 use std::path::{Path, PathBuf};
-use std::process::{exit, Command};
+use std::process::{exit, Command, Stdio};
 use directories::ProjectDirs;
 use serde_json::{Value, json, from_str, from_reader};
 use rpassword::read_password;
@@ -76,14 +76,9 @@ fn main() {
     }
     
     // execute command and print output
-    let output = Command::new(response_command).output().expect("failed to execute command");
-    if output.status.success() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        println!("{}", stdout);
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        println!("command failed with error: {}", stderr);
-    }
+    let mut child= Command::new(response_command).envs(env::vars()).stdout(Stdio::piped()).spawn().expect("failed to execute command");
+    let output = child.wait_with_output().expect("failed to read stdout");
+    println!("Output: {}", String::from_utf8_lossy(&output.stdout));
 }
 
 fn get_config() -> Value {
