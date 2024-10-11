@@ -77,7 +77,7 @@ fn main() {
     }
     
     // execute command and print output
-    let mut child_process = Command::new(&response_command[0])
+    let child_process = Command::new(&response_command[0])
         .args(&response_command[1..response_command.len()])
         .stdout(Stdio::piped())
         .spawn()
@@ -141,8 +141,8 @@ fn extract_command_from_response (response: &Value) -> Vec<String> {
     let choices: &Value = response.get("choices").expect("failed to get OpenAI API response choices array");
     let choice: &Value = choices.get(0).expect("failed to get OpenAI API response choice object");
     let message: &Value = choice.get("message").expect("failed to get OpenAI API response choice message");
-    let mut content: &str = message.get("content").expect("failed to get OpenAI API response message content").as_str().unwrap();
+    let content: &str = message.get("content").expect("failed to get OpenAI API response message content").as_str().unwrap();
 
-    let mut replaced_content: String = String::from(content).replace(CMD_STR, "");
+    let replaced_content: String = String::from(content).replace(CMD_STR, "");
     replaced_content.split(" ").map(str::to_string).collect()
 }
