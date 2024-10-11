@@ -63,22 +63,28 @@ fn main() {
 
     // extract response
     let response_json: Value = from_str(&response).unwrap();
-    let response_command: String = extract_command_from_response(&response_json);
+    let response_command: Vec<String> = extract_command_from_response(&response_json);
 
     // ask for confirmation
-    println!("getcmd returned the following command:\n\n{}\n\nrun it? (y/n)", response_command);
+    println!("getcmd returned the following command:\n\n{}\n\nrun it? (y/n)", response_command.join(" "));
     io::stdout().flush().unwrap(); // flush output
     let mut continue_response = String::new();
     stdin().read_line(&mut continue_response).expect("did not enter a correct string");
-    if continue_response.trim() != "y" { // exit if user does not want to run command
+    if continue_response.trim() != "y" {
+        // exit since user does not want to run command
         println!("exiting...");
         exit(0);
     }
     
     // execute command and print output
-    let mut child= Command::new(response_command).envs(env::vars()).stdout(Stdio::piped()).spawn().expect("failed to execute command");
-    let output = child.wait_with_output().expect("failed to read stdout");
-    println!("Output: {}", String::from_utf8_lossy(&output.stdout));
+    let mut child_process = Command::new(&response_command[0])
+        .args(&response_command[1..response_command.len()])
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("failed to execute command");
+    let output = child_process.wait_with_output().expect("failed to read stdout");
+    // let output = Command::new("sh").arg("-c").arg("echo hello").output().expect("failed to execute process");
+    println!("\noutput:\n{}", String::from_utf8_lossy(&output.stdout));
 }
 
 fn get_config() -> Value {
@@ -131,11 +137,12 @@ fn get_config() -> Value {
     config_json
 }
 
-fn extract_command_from_response (response: &Value) -> String {
-    let choices: &Value = response.get("choices").expect("OpenAI API response choices array");
-    let choice: &Value = choices.get(0).expect("OpenAI response choice object");
-    let message: &Value = choice.get("message").expect("OpenAI response choice message");
-    let content: String = message.get("content").expect("OpenAI response message content").to_string();
+fn extract_command_from_response (response: &Value) -> Vec<String> {
+    let choices: &Value = response.get("choices").expect("failed to get OpenAI API response choices array");
+    let choice: &Value = choices.get(0).expect("failed to get OpenAI API response choice object");
+    let message: &Value = choice.get("message").expect("failed to get OpenAI API response choice message");
+    let mut content: &str = message.get("content").expect("failed to get OpenAI API response message content").as_str().unwrap();
 
-    content.replace(CMD_STR, "")
+    let mut replaced_content: String = String::from(content).replace(CMD_STR, "");
+    replaced_content.split(" ").map(str::to_string).collect()
 }
