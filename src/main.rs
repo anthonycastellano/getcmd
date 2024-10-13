@@ -21,6 +21,9 @@ const OPENAI_URL: &str = "https://api.openai.com";
 const OPENAI_CHAT_PATH: &str = "/v1/chat/completions";
 const OPENAI_CHAT_MODEL: &str = "gpt-4o-mini";
 
+// TODO: retry command if exits with error, feeding in error code/message (would add another round of confirmation)
+// TODO: add confirmation option to modify the returned command before running it (would add another round of confirmation)
+
 fn main() {
     // set OS info
     let os_type = sys_info::os_type().expect("failed to get OS type");
