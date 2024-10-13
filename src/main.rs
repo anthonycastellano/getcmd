@@ -1,10 +1,10 @@
-use std::env;
-use std::fs;
+use std::{env, fs};
 use std::io::{self, Write, stdin};
 use std::path::{Path, PathBuf};
 use std::process::{exit, Command, Stdio};
 use directories::ProjectDirs;
 use serde_json::{Value, json, from_str, from_reader};
+use sys_info;
 use rpassword::read_password;
 use reqwest::blocking::Client;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
@@ -17,12 +17,17 @@ const CONFIG_FILENAME: &str = "conf.json";
 const API_KEY_KEY: &str = "api_key";
 
 const CMD_STR: &str = "`";
-const PROMPT_PREFIX: &str = "Respond ONLY with the command to run to perform the following objective on Ubuntu Linux, surrounded by the '`' character:";
 const OPENAI_URL: &str = "https://api.openai.com";
 const OPENAI_CHAT_PATH: &str = "/v1/chat/completions";
 const OPENAI_CHAT_MODEL: &str = "gpt-4o-mini";
 
 fn main() {
+    // set OS info
+    let os_type = sys_info::os_type().expect("failed to get OS type");
+    let os_release = sys_info::linux_os_release().expect("failed to get OS version");
+    let os_distro = os_release.id();
+    let formatted_prompt_prefix = format!("Respond ONLY with the command to run to perform the following objective on {} {}, surrounded by the '`' character: ", os_distro, os_type);
+
     // grab args
     let args: Vec<String> = env::args().collect();
 
@@ -36,7 +41,7 @@ fn main() {
     let config_json: Value = get_config(); 
 
     // combine non-flag args into string
-    let prompt: String = format!("{}{}", PROMPT_PREFIX, args[1..].join(" ").to_string());
+    let prompt: String = format!("{}{}", formatted_prompt_prefix, args[1..].join(" ").to_string());
 
     // set up request
     let url: String = format!("{}{}", OPENAI_URL, OPENAI_CHAT_PATH);
