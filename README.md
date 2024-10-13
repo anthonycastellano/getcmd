@@ -1,7 +1,8 @@
-## getcmd
+# getcmd
 A simple CLI which utilizes OpenAI LLMs to recommend and run shell commands.
 
-<hr>
+### Initial Configuration
+Upon running `getcmd` for the first time, a prompt will appear asking for your OpenAI API key. The key will be persisted for future queries in your OS's default configuration folder, for example `~/.config/` on Linux.
 
 ### Usage
 ```
