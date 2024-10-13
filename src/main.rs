@@ -89,7 +89,7 @@ fn main() {
         .expect("failed to execute command");
     let output = child_process.wait_with_output().expect("failed to read stdout");
     // let output = Command::new("sh").arg("-c").arg("echo hello").output().expect("failed to execute process");
-    println!("\noutput:\n{}", String::from_utf8_lossy(&output.stdout));
+    println!("{}", String::from_utf8_lossy(&output.stdout));
 }
 
 fn get_config() -> Value {
