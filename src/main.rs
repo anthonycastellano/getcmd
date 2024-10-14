@@ -27,8 +27,10 @@ const OPENAI_CHAT_MODEL: &str = "gpt-4o-mini";
 fn main() {
     // set OS info
     let os_type = sys_info::os_type().expect("failed to get OS type");
-    let os_release = sys_info::linux_os_release().expect("failed to get OS version");
-    let os_distro = os_release.id();
+    let os_distro = match os_type.as_str() {
+        "Linux" => sys_info::linux_os_release().expect("failed to get OS version").id().to_owned(),
+        _ => String::new(),
+    };
     let formatted_prompt_prefix = format!("Respond ONLY with the command to run to perform the following objective on {} {}, surrounded by the '`' character: ", os_distro, os_type);
 
     // grab args
@@ -49,7 +51,7 @@ fn main() {
     // set up request
     let url: String = format!("{}{}", OPENAI_URL, OPENAI_CHAT_PATH);
     let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", config_json.get(API_KEY_KEY).unwrap().as_str().unwrap())).unwrap());
+    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", config_json.get(API_KEY_KEY).unwrap().as_str().unwrap())).expect("failed to insert auth header"));
     headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
     let body = json!({
         "model": OPENAI_CHAT_MODEL,
