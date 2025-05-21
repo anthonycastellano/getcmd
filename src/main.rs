@@ -8,6 +8,7 @@ use sys_info;
 use rpassword::read_password;
 use reqwest::blocking::Client;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
+use colored::Colorize;
 
 const QUALIFIER: &str = "com";
 const ORGANIZATION: &str = "tony";
@@ -36,7 +37,7 @@ fn main() {
 
     // validate input
     if args.len() <= 1 {
-        println!("Error: An instruction must be provided.");
+        println!("{}", String::from("error: An instruction must be provided.").red());
         exit(1);
     }
 
@@ -64,7 +65,7 @@ fn main() {
     let response = match client.post(url).headers(headers).json(&body).send() {
         Ok(res) => res.text().unwrap(),
         Err(e) => {
-            println!("Error while making request: {}", e);
+            println!("{} {}", String::from("error while making request:").red(), e.to_string().red());
             String::from("{}")
         },
     };
@@ -74,7 +75,7 @@ fn main() {
     let response_command: Vec<String> = extract_command_from_response(&response_json);
 
     // ask for confirmation
-    println!("getcmd returned the following command:\n\n{}\n\nrun it? (y/n)", response_command.join(" "));
+    println!("getcmd returned the following command:\n\n{}\n\nrun it? (y/n)", response_command.join(" ").yellow());
     io::stdout().flush().unwrap(); // flush output
     let mut continue_response = String::new();
     stdin().read_line(&mut continue_response).expect("did not enter a correct string");
@@ -102,7 +103,7 @@ fn get_config() -> Value {
         None => Path::new("").to_path_buf(),
     };
     if config_dir.to_str().unwrap() == "" {
-        println!("Error: Unable to get config dir.");
+        println!("{}", String::from("error: Unable to get config dir.").red());
         exit(1);
     }
 
@@ -111,7 +112,7 @@ fn get_config() -> Value {
         match fs::create_dir_all(&config_dir) {
             Ok(_) => {},
             Err(e) => {
-                println!("Error: Could not create config dir: {}", e);
+                println!("{} {}", String::from("error: Could not create config dir:").red(), e.to_string().red());
                 exit(1);
             },
         }
